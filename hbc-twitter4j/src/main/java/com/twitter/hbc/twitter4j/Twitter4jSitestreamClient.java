@@ -18,11 +18,14 @@ import com.google.common.collect.ImmutableList;
 import com.twitter.hbc.core.Client;
 import com.twitter.hbc.twitter4j.handler.SitestreamHandler;
 import com.twitter.hbc.twitter4j.message.DisconnectMessage;
+import com.twitter.hbc.twitter4j.message.FollowsOverLimitMessage;
 import com.twitter.hbc.twitter4j.message.StallWarningMessage;
 import com.twitter.hbc.twitter4j.parser.JSONObjectParser;
+
 import twitter4j.*;
 
 import javax.annotation.Nullable;
+
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -224,6 +227,70 @@ public class Twitter4jSitestreamClient extends BaseTwitter4jClient {
       }
     }
   }
+	
+  @Override
+  protected void onScrubGeo(long sitestreamUser, long userId, long upToStatusId) {
+    for (SiteStreamsListener listener : sitestreamListeners) {
+      if (listener instanceof SitestreamHandler) 
+        ((SitestreamHandler)listener).onScrubGeo(sitestreamUser, userId, upToStatusId);
+    }
+  }
+	
+	@Override
+	protected void onRetweet(long sitestreamUser, User source, User target, Status tweet) {
+		for (SiteStreamsListener listener : sitestreamListeners) {
+			if (listener instanceof SitestreamHandler) 
+				((SitestreamHandler)listener).onRetweet(sitestreamUser, source, target, tweet);
+		}
+	}
+	
+	@Override
+	protected void onFollowsOverLimitMessage(FollowsOverLimitMessage warningMessage) {
+		for (SiteStreamsListener listener : sitestreamListeners) {
+			if (listener instanceof SitestreamHandler) 
+				((SitestreamHandler)listener).onFollowsOverLimitMessage(warningMessage);
+		}
+	}
+	
+	@Override
+	protected void onAccessRevoked(long userId) {
+		for (SiteStreamsListener listener : sitestreamListeners) {
+			if (listener instanceof SitestreamHandler) 
+				((SitestreamHandler)listener).onAccessRevoked(userId);
+		}
+	}
+	
+	@Override
+	protected void onAccessUnrevoked(long userId) {
+		for (SiteStreamsListener listener : sitestreamListeners) {
+			if (listener instanceof SitestreamHandler) 
+				((SitestreamHandler)listener).onAccessUnrevoked(userId);
+		}
+	}
+	
+	@Override
+	protected void onUserDelete(long userId) {
+		for (SiteStreamsListener listener : sitestreamListeners) {
+			if (listener instanceof SitestreamHandler) 
+				((SitestreamHandler)listener).onUserDelete(userId);
+		}
+	}
+	
+	@Override
+	protected void onUserSuspend(long userId) {
+		for (SiteStreamsListener listener : sitestreamListeners) {
+			if (listener instanceof SitestreamHandler) 
+				((SitestreamHandler)listener).onUserSuspend(userId);
+		}
+	}
+	
+	@Override
+	protected void onUserReconnected(long userId) {
+		for (SiteStreamsListener listener : sitestreamListeners) {
+			if (listener instanceof SitestreamHandler) 
+				((SitestreamHandler)listener).onUserReconnected(userId);
+		}
+	}
 
   @Override
   protected void onUnknownMessageType(String msg) {

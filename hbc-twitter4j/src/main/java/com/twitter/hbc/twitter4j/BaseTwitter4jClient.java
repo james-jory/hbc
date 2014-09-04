@@ -19,12 +19,16 @@ import com.twitter.hbc.core.Client;
 import com.twitter.hbc.core.StatsReporter;
 import com.twitter.hbc.core.endpoint.StreamingEndpoint;
 import com.twitter.hbc.twitter4j.message.DisconnectMessage;
+import com.twitter.hbc.twitter4j.message.FollowsOverLimitMessage;
 import com.twitter.hbc.twitter4j.message.StallWarningMessage;
 import com.twitter.hbc.twitter4j.parser.JSONObjectParser;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import twitter4j.*;
 import twitter4j.conf.ConfigurationBuilder;
+
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -212,7 +216,11 @@ class BaseTwitter4jClient implements Twitter4jClient {
         processDisconnectMessage(json);
         break;
       case STALL_WARNING:
-        processStallWarning(json);
+        // Since Twitter4j incorrectly interprets "follows over limit" as a stall warning, double-check here.
+        if (JSONObjectParser.isStallWarningMessage(json)) 
+          processStallWarning(json);
+        else if (JSONObjectParser.isFollowsOverLimitMessage(json)) 
+          processFollowsOverLimitMessage(json);
         break;
       case UNKNOWN:
       default:
@@ -220,7 +228,26 @@ class BaseTwitter4jClient implements Twitter4jClient {
           processRetweet(sitestreamUser, json);
         } else if (JSONObjectParser.isControlStreamMessage(json)) {
           processControlStream(json);
-        } else {
+        } 
+        else if (JSONObjectParser.isFollowsOverLimitMessage(json)) { 
+          processFollowsOverLimitMessage(json);
+        }
+        else if (JSONObjectParser.isAccessRevokedEvent(json)) {
+          onAccessRevoked(json.getLong("target"));
+        }
+        else if (JSONObjectParser.isAccessUnrevokedEvent(json)) {
+          onAccessUnrevoked(json.getLong("target"));
+        }
+        else if (JSONObjectParser.isUserDeleteEvent(json)) {
+          onUserDelete(json.getLong("target"));
+        }
+        else if (JSONObjectParser.isUserSuspendEvent(json)) {
+          onUserSuspend(json.getLong("target"));
+        }
+        else if (JSONObjectParser.isUserReconnectedEvent(json)) {
+          onUserReconnected(json.getLong("target"));
+        }
+        else {
           onUnknownMessageType(json.toString());
         }
     }
@@ -374,6 +401,10 @@ class BaseTwitter4jClient implements Twitter4jClient {
   private void processDisconnectMessage(JSONObject json) throws JSONException {
     onDisconnectMessage(JSONObjectParser.parseDisconnectMessage(json));
   }
+  
+  private void processFollowsOverLimitMessage(JSONObject json) throws JSONException {
+    onFollowsOverLimitMessage(JSONObjectParser.parseFollowsOverLimitWarningMessage(json));
+  }
 
   protected void onStatus(long sitestreamUser, final Status status) {
     logger.info("Unhandled event: onStatus");
@@ -471,12 +502,36 @@ class BaseTwitter4jClient implements Twitter4jClient {
     logger.info("Unhandled event: onDisconnectMessage - {}", disconnectMessage.toString());
   }
 
+  protected void onFollowsOverLimitMessage(FollowsOverLimitMessage warningMessage) {
+    logger.info("Unhandled event: onFollowsOverLimitMessage - {}", warningMessage.toString());
+  }
+
   protected void onException(Exception e) {
     logger.info("Exception caught", e);
   }
 
   protected void onStallWarning(StallWarningMessage stallWarning) {
     logger.info("Unhandled event: onStallWarning - {}", stallWarning);
+  }
+  
+  protected void onAccessRevoked(long userId) {
+    logger.info("Unhandled event: onAccessRevoked by user {}", userId);
+  }
+
+  protected void onAccessUnrevoked(long userId) {
+	logger.info("Unhandled event: onAccessUnrevoked by user {}", userId);
+  } 
+
+  protected void onUserDelete(long userId) {
+	logger.info("Unhandled event: onUserDelete for user {}", userId);
+  }
+
+  protected void onUserSuspend(long userId) {
+	logger.info("Unhandled event: onUserSuspend for user {}", userId);
+  }
+
+  protected void onUserReconnected(long userId) {
+	logger.info("Unhandled event: onUserReconnected for user {}", userId);
   }
 
   protected void onUnknownMessageType(String msg) {

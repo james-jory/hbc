@@ -15,6 +15,8 @@ package com.twitter.hbc.twitter4j.parser;
 
 import com.google.common.primitives.Longs;
 import com.twitter.hbc.twitter4j.message.DisconnectMessage;
+import com.twitter.hbc.twitter4j.message.FollowsOverLimitMessage;
+
 import twitter4j.StatusDeletionNotice;
 import twitter4j.JSONArray;
 import twitter4j.JSONException;
@@ -28,20 +30,22 @@ public class JSONObjectParser {
     final long statusId = statusDelete.getLong("id");
     final long userId = statusDelete.getLong("user_id");
     return new StatusDeletionNotice() {
-      @Override
-      public long getStatusId() {
-        return statusId;
-      }
+    	private static final long serialVersionUID = -785381704493207738L;
 
-      @Override
-      public long getUserId() {
-        return userId;
-      }
-
-      @Override
-      public int compareTo(StatusDeletionNotice o) {
-        return Longs.compare(getStatusId(), o.getStatusId());
-      }
+		@Override
+	      public long getStatusId() {
+	        return statusId;
+	      }
+	
+	      @Override
+	      public long getUserId() {
+	        return userId;
+	      }
+	
+	      @Override
+	      public int compareTo(StatusDeletionNotice o) {
+	        return Longs.compare(getStatusId(), o.getStatusId());
+	      }
     };
   }
 
@@ -119,5 +123,53 @@ public class JSONObjectParser {
     String streamName = json.getString("stream_name");
     String reason = json.getString("reason");
     return new DisconnectMessage(code, streamName, reason);
+  }
+  
+  public static boolean isStallWarningMessage(JSONObject message) throws JSONException {
+	  if (!message.has("warning"))
+		  return false;
+	  
+	  JSONObject warning = message.getJSONObject("warning");
+	  return "FALLING_BEHIND".equals(warning.get("code"));
+  }
+  
+  public static boolean isFollowsOverLimitMessage(JSONObject message) throws JSONException {
+	  if (!message.has("warning"))
+		  return false;
+	  
+	  JSONObject warning = message.getJSONObject("warning");
+	  return "FOLLOWS_OVER_LIMIT".equals(warning.get("code"));
+  }
+  
+  public static FollowsOverLimitMessage parseFollowsOverLimitWarningMessage(JSONObject message) throws JSONException {
+	  JSONObject warning = message.getJSONObject("warning");
+	  String code = warning.getString("code");
+	  String msg = warning.getString("message");
+	  long userId = warning.getLong("user_id");
+	  return new FollowsOverLimitMessage(code, msg, userId);
+  }
+  
+  public static boolean isAccessRevokedEvent(JSONObject event) throws JSONException {
+	  return isEvent(event, "access_revoked");
+  }
+  
+  public static boolean isAccessUnrevokedEvent(JSONObject event) throws JSONException {
+	  return isEvent(event, "access_unrevoked");
+  }
+  
+  public static boolean isUserDeleteEvent(JSONObject event) throws JSONException {
+	  return isEvent(event, "user_delete");
+  }
+  
+  public static boolean isUserSuspendEvent(JSONObject event) throws JSONException {
+	  return isEvent(event, "user_suspend");
+  }
+  
+  public static boolean isUserReconnectedEvent(JSONObject event) throws JSONException {
+	  return isEvent(event, "user_reconnected");
+  }
+  
+  private static boolean isEvent(JSONObject event, String type) throws JSONException {
+	  return event.has("event") && type.equals(event.get("event"));
   }
 }

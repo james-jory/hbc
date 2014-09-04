@@ -21,12 +21,49 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CreateEvent {
+  /**
+   * Creates event where target, source, and targetObject are assumed to be 
+   * JSON strings which are parsed into JSON objects.
+   * 
+   * @param eventName
+   * @param target
+   * @param source
+   * @param targetObject
+   * @return
+   * @throws JSONException
+   */
   public static JSONObject createEvent(
           String eventName,
           String target,
           String source,
           @Nullable String targetObject
   ) throws JSONException {
+
+    return createEventWithTarget(
+        eventName, 
+        target, 
+        source, 
+        targetObject != null ? new JSONObject(targetObject) : null
+    );
+  }
+  
+  /**
+   * Creates event where targetObject, if specified, is set on the event
+   * as-is (i.e. it's not parsed into JSON object).
+   * 
+   * @param eventName
+   * @param target
+   * @param source
+   * @param targetObject
+   * @return
+   * @throws JSONException
+   */
+  public static JSONObject createEventWithTarget(
+      String eventName,
+      String target,
+      String source,
+      @Nullable Object targetObject
+   ) throws JSONException {
 
     Preconditions.checkNotNull(eventName);
     Preconditions.checkNotNull(target);
@@ -36,7 +73,38 @@ public class CreateEvent {
     map.put("target", new JSONObject(target));
     map.put("source", new JSONObject(source));
     if (targetObject != null) {
-      map.put("target_object", new JSONObject(targetObject));
+      map.put("target_object", targetObject);
+    }
+    return new JSONObject(map);
+  }
+  
+  /**
+   * Creates event where targetObject, if specified, is set on the event
+   * as-is (i.e. it's not parsed into JSON object).
+   * 
+   * @param eventName
+   * @param target
+   * @param source
+   * @param targetObject
+   * @return
+   * @throws JSONException
+   */
+  public static JSONObject createEventWithTarget(
+      String eventName,
+      long target,
+      long source,
+      @Nullable String targetObject
+   ) throws JSONException {
+
+    Preconditions.checkNotNull(eventName);
+    Preconditions.checkNotNull(target);
+    Preconditions.checkNotNull(source);
+    Map<String, Object> map = new HashMap<String, Object>();
+    map.put("event", eventName);
+    map.put("target", target);
+    map.put("source", source);
+    if (targetObject != null) {
+      map.put("target_object", targetObject);
     }
     return new JSONObject(map);
   }

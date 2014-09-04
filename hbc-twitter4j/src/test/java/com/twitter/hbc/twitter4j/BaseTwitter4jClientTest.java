@@ -15,8 +15,11 @@ package com.twitter.hbc.twitter4j;
 
 import com.twitter.hbc.httpclient.BasicClient;
 import com.twitter.hbc.twitter4j.message.DisconnectMessage;
+import com.twitter.hbc.twitter4j.message.FollowsOverLimitMessage;
+
 import org.junit.Before;
 import org.junit.Test;
+
 import twitter4j.*;
 
 import java.io.IOException;
@@ -45,6 +48,7 @@ public class BaseTwitter4jClientTest {
   private String disconnectMessage;
   private String controlMessage;
   private String directMessageDelete;
+  private String followsOverLimitMessage;
 
   @Before
   public void setup() throws IOException {
@@ -62,6 +66,7 @@ public class BaseTwitter4jClientTest {
     controlMessage = reader.readFile("control-message.json");
     directMessage = reader.readFile("direct-message.json");
     directMessageDelete = reader.readFile("direct-message-delete.json");
+    followsOverLimitMessage = reader.readFile("follows-over-limit-message.json");
   }
 
   @Test
@@ -247,5 +252,46 @@ public class BaseTwitter4jClientTest {
   public void testDisconnectListener() throws TwitterException, IOException, JSONException {
     t4jClient.processMessage(-1, new JSONObject(disconnectMessage));
     verify(t4jClient).onDisconnectMessage(any(DisconnectMessage.class));
+  }
+
+  @Test
+  public void testAccessRevoked() throws TwitterException, IOException, JSONException {
+    JSONObject json = CreateEvent.createEventWithTarget("access_revoked", 1234l, 1234l, "client_application");
+    t4jClient.processMessage(-1, json);
+    verify(t4jClient).onAccessRevoked(anyLong());
+  }
+
+  @Test
+  public void testAccessUnrevoked() throws TwitterException, IOException, JSONException {
+    JSONObject json = CreateEvent.createEventWithTarget("access_unrevoked", 1234l, 1234l, "client_application");
+    t4jClient.processMessage(-1, json);
+    verify(t4jClient).onAccessUnrevoked(anyLong());
+  }
+
+  @Test
+  public void testUserDelete() throws TwitterException, IOException, JSONException {
+    JSONObject json = CreateEvent.createEventWithTarget("user_delete", 1234l, 1234l, "client_application");
+    t4jClient.processMessage(-1, json);
+    verify(t4jClient).onUserDelete(anyLong());
+  }
+
+  @Test
+  public void testUserSuspend() throws TwitterException, IOException, JSONException {
+    JSONObject json = CreateEvent.createEventWithTarget("user_suspend", 1234l, 1234l, "client_application");
+    t4jClient.processMessage(-1, json);
+    verify(t4jClient).onUserSuspend(anyLong());
+  }
+
+  @Test
+  public void testUserReconnected() throws TwitterException, IOException, JSONException {
+    JSONObject json = CreateEvent.createEventWithTarget("user_reconnected", 1234l, 1234l, "client_application");
+    t4jClient.processMessage(-1, json);
+    verify(t4jClient).onUserReconnected(anyLong());
+  }
+
+  @Test
+  public void testFollowsOverLimitMessage() throws TwitterException, IOException, JSONException {
+    t4jClient.processMessage(-1, new JSONObject(followsOverLimitMessage));
+    verify(t4jClient).onFollowsOverLimitMessage(any(FollowsOverLimitMessage.class));
   }
 }
